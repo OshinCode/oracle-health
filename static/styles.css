@@ -1,18 +1,32 @@
-body {
-    background-color: #f8f9fa;
+/* Light Mode (Default) */
+:root {
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #212529;
+    --muted-text: #6c757d;
 }
 
-.card {
-    border: none;
-    border-radius: 15px;
-    transition: transform 0.2s;
+/* Dark Mode Colors */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --muted-text: #b0b0b0;
 }
 
-.card:hover {
-    transform: translateY(-5px);
+body { 
+    background-color: var(--bg-color); 
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
 }
 
-.stat-value {
-    font-size: 2.5rem;
-    font-weight: bold;
+.card { 
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: none; 
+    border-radius: 15px; 
+}
+
+.text-muted {
+    color: var(--muted-text) !important;
 }
