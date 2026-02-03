@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Health Dashboard</title>
+    <meta http-equiv="refresh" content="5">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border: none; border-radius: 15px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .stat-value { font-size: 2.5rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><span class="text-primary">Oracle VM</span> Health</h1>
+            <span class="badge bg-success">Status: Online</span>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <h5 class="text-muted">CPU Usage</h5>
+                    <div class="stat-value text-primary">{{ stats.cpu }}%</div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ stats.cpu }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <h5 class="text-muted">Memory (RAM)</h5>
+                    <div class="stat-value text-success">{{ stats.memory_percent }}%</div>
+                    <p class="mb-0 mt-2">{{ stats.memory_used }} GB / {{ stats.memory_total }} GB</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <h5 class="text-muted">Disk Space</h5>
+                    <div class="stat-value text-danger">{{ stats.disk_percent }}%</div>
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ stats.disk_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 p-4 bg-white rounded shadow-sm">
+            <h6 class="text-muted mb-0">Server Uptime Info</h6>
+            <p class="mb-0"><strong>Last Boot Time:</strong> {{ stats.boot_time }}</p>
+        </div>
+    </div>
+</body>
+</html>
