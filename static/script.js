@@ -89,3 +89,97 @@ async function startLiveUpdates() {
     // Set the loop
     setInterval(updateStats, 5000);
 }
+
+/* --- Existing Dashboard Logic --- */
+// (Keep your DOMContentLoaded, toggleDarkMode, and startLiveUpdates here)
+
+/* --- NEW: History Page Logic --- */
+let usageChartInstance = null;
+let networkChartInstance = null;
+
+async function loadCharts() {
+    const limitSelect = document.getElementById('limit-select');
+    if (!limitSelect) return; // Exit if not on the history page
+
+    try {
+        const limit = limitSelect.value;
+        const response = await fetch(`/api/history?limit=${limit}`);
+        const data = await response.json();
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDark ? '#b0b0b0' : '#6c757d';
+
+        const labels = data.map(entry => entry.timestamp.split(' ')[1]);
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                y: { grid: { color: gridColor }, ticks: { color: textColor } }
+            },
+            plugins: { 
+                legend: { labels: { color: textColor } },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: isDark ? '#2b2b2b' : 'rgba(0, 0, 0, 0.8)',
+                    titleColor: isDark ? '#e0e0e0' : '#fff',
+                    bodyColor: isDark ? '#e0e0e0' : '#fff',
+                    borderColor: isDark ? '#444' : 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                const isNetwork = context.chart.canvas.id === 'networkChart';
+                                label += context.parsed.y + (isNetwork ? ' KB/s' : '%');
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (usageChartInstance) usageChartInstance.destroy();
+        if (networkChartInstance) networkChartInstance.destroy();
+
+        usageChartInstance = new Chart(document.getElementById('usageChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'CPU %', data: data.map(e => e.cpu), borderColor: '#0d6efd', tension: 0.3, pointRadius: 0 },
+                    { label: 'RAM %', data: data.map(e => e.memory_percent), borderColor: '#198754', tension: 0.3, pointRadius: 0 },
+                    { label: 'Disk %', data: data.map(e => e.disk_percent), borderColor: '#dc3545', tension: 0.3, pointRadius: 0 }
+                ]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, min: 0, max: 100 } } }
+        });
+
+        networkChartInstance = new Chart(document.getElementById('networkChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Upload (KB/s)', data: data.map(e => e.net_up), borderColor: '#0dcaf0', pointRadius: 0 },
+                    { label: 'Download (KB/s)', data: data.map(e => e.net_down), borderColor: '#2ecc71', pointRadius: 0 }
+                ]
+            },
+            options: commonOptions
+        });
+    } catch (error) {
+        console.error("Failed to load history charts:", error);
+    }
+}
+
+// Automatically trigger loadCharts if we are on the history page
+if (window.location.pathname === '/history') {
+    document.addEventListener('DOMContentLoaded', loadCharts);
+}

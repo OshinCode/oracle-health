@@ -28,9 +28,12 @@
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><span class="text-primary">Oracle VM</span> Health</h1>
-            <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">
-                🌙 Dark Mode
-            </button>
+            <div class="button-container">
+                <a href="/history" class="btn btn-primary btn-sm me-2">📊 View History</a>
+                <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">
+                    🌙 Dark Mode
+                </button>
+            </div>
         </div>
 
         <div class="row g-4">
@@ -38,7 +41,8 @@
                 <div class="card shadow-sm p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <h5 class="text-muted text-uppercase small fw-bold">CPU Usage</h5>
-                        <span id="load-val" class="badge bg-secondary opacity-75" title="Load Avg (1, 5, 15 min)">{{ stats.load_avg }}</span>
+                        <span id="load-val" class="badge bg-secondary opacity-75" title="Load Avg (1, 5, 15 min)">{{
+                            stats.load_avg }}</span>
                     </div>
                     <div id="cpu-val" class="stat-value text-primary">{{ stats.cpu }}%</div>
                     <div class="progress mt-3" style="height: 8px;">
@@ -95,11 +99,12 @@
                     <p class="mb-1"><strong>Server Uptime:</strong> <span id="uptime-val">{{ stats.uptime }}</span></p>
                 </div>
                 <div class="col-md-4">
-                    <p class="mb-1"><strong>Cached RAM:</strong> <span id="mem-cached">{{ stats.memory_cached }}</span> GB</p>
+                    <p class="mb-1"><strong>Cached RAM:</strong> <span id="mem-cached">{{ stats.memory_cached }}</span>
+                        GB</p>
                     <p class="mb-1 text-muted small"><strong>Booted At:</strong> {{ stats.boot_time }}</p>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-column justify-content-end">
-                    <p class="mb-0"><strong>Last Refreshed:</strong> 
+                    <p class="mb-0"><strong>Last Refreshed:</strong>
                         <span id="last-update" class="fw-bold" style="transition: color 0.3s ease;">Loading...</span>
                     </p>
                 </div>
