@@ -5,6 +5,7 @@ import sys
 import time
 import sqlite3
 import platform
+import logging # Added for standard logging configuration
 from flask import Flask, render_template, jsonify, request
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -28,7 +29,7 @@ def init_db():
                 net_down REAL
             )
         ''')
-    print(" Database initialized.")
+    print("✅ Database initialized.")
 
 def check_env_vars():
     """Checks if required environment variables are set. Exits if missing."""
@@ -36,13 +37,20 @@ def check_env_vars():
     missing = [var for var in required_vars if os.getenv(var) is None]
     
     if missing:
-        print(f" ERROR: Missing required environment variables: {', '.join(missing)}")
+        print(f"❌ ERROR: Missing required environment variables: {', '.join(missing)}")
         sys.exit(1)
 
 check_env_vars()
 init_db()
 
 app = Flask(__name__)
+
+# Configure Flask logging to be visible in Gunicorn
+if __name__ != '__main__':
+    # Gunicorn uses 'gunicorn.error' logger
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 # Global trackers for Network Speed calculation
 net_data = {
@@ -91,36 +99,32 @@ def get_system_stats():
     }
 
 def log_stats_task():
-    """Background task to log stats every 5 minutes (or 1 second for testing)."""
-    stats = get_system_stats()
-    
-    # Extract numeric values from strings like "1.2 KB/s"
-    up = float(stats['net_up'].split()[0])
-    down = float(stats['net_down'].split()[0])
-    
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute('''
-            INSERT INTO system_stats (cpu, memory_percent, disk_percent, net_up, net_down)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
-            stats['cpu'], 
-            stats['memory_percent'], 
-            stats['disk_percent'], # Now explicitly being logged
-            up, 
-            down
-        ))
+    """Background task to log stats."""
+    try:
+        stats = get_system_stats()
+        up = float(stats['net_up'].split()[0])
+        down = float(stats['net_down'].split()[0])
+        
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute('''
+                INSERT INTO system_stats (cpu, memory_percent, disk_percent, net_up, net_down)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (stats['cpu'], stats['memory_percent'], stats['disk_percent'], up, down))
+        
+        app.logger.info(f"Background Log Successful: CPU {stats['cpu']}% | RAM {stats['memory_percent']}%")
+    except Exception as e:
+        app.logger.error(f"Background Logging Failed: {str(e)}")
 
 # Start the background scheduler
 scheduler = BackgroundScheduler()
-seconds_internal = int(os.getenv('LOG_SECONDS', 300))  # Default to 5 minutes if not set
+seconds_internal = int(os.getenv('LOG_SECONDS', 300))
 scheduler.add_job(func=log_stats_task, trigger="interval", seconds=seconds_internal)
 scheduler.start()
+app.logger.info(f"Scheduler started. Logging every {seconds_internal} seconds.")
 
 @app.route('/')
 def index():
-    stats = get_system_stats()
-    stats["boot_time"] = datetime.datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
-    return render_template('index.html', stats=stats)
+    return render_template('index.html', stats=get_system_stats())
 
 @app.route('/history')
 def history():
@@ -128,31 +132,40 @@ def history():
 
 @app.route('/api/stats')
 def api_stats():
+    # Only log this if you really need to debug dashboard polling
     return jsonify(get_system_stats())
 
 @app.route('/api/history')
 def api_history():
-    """Returns the last X data points based on the limit parameter."""
-    # Get limit from URL parameter, default to 100
     limit = request.args.get('limit', default=100, type=int)
-    
-    # Cap the limit to 1000 for performance safety
-    if limit > 1000:
-        limit = 1000
+    if limit > 1000: limit = 1000
+
+    app.logger.info(f"API History Requested: limit={limit} from {request.remote_addr}")
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        # Use the dynamic limit in the query
         cursor = conn.execute('SELECT * FROM system_stats ORDER BY timestamp DESC LIMIT ?', (limit,))
         rows = cursor.fetchall()
     
     return jsonify([dict(row) for row in rows][::-1])
 
+@app.route('/api/clear-history', methods=['POST'])
+def clear_history():
+    app.logger.warning(f"CLEAR HISTORY TRIGGERED from {request.remote_addr}")
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute('DELETE FROM system_stats')
+            conn.execute("DELETE FROM sqlite_sequence WHERE name='system_stats'")
+        return jsonify({"status": "success", "message": "History cleared"})
+    except Exception as e:
+        app.logger.error(f"Clear History Failed: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == '__main__':
     try:
         is_debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
         port_num = int(os.getenv('FLASK_PORT', 5000))
-        # use_reloader=False prevents the scheduler from starting twice
         app.run(host='0.0.0.0', port=port_num, debug=is_debug, use_reloader=False)
     except (KeyboardInterrupt, SystemExit):
+        app.logger.info("Shutting down scheduler...")
         scheduler.shutdown()
