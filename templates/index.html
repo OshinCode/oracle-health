@@ -36,7 +36,10 @@
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="card shadow-sm p-4">
-                    <h5 class="text-muted text-uppercase small fw-bold">CPU Usage</h5>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="text-muted text-uppercase small fw-bold">CPU Usage</h5>
+                        <span id="load-val" class="badge bg-secondary opacity-75" title="Load Avg (1, 5, 15 min)">{{ stats.load_avg }}</span>
+                    </div>
                     <div id="cpu-val" class="stat-value text-primary">{{ stats.cpu }}%</div>
                     <div class="progress mt-3" style="height: 8px;">
                         <div id="cpu-bar" class="progress-bar" role="progressbar" style="width: {{ stats.cpu }}%"></div>
@@ -66,10 +69,41 @@
             </div>
         </div>
 
+        <div class="row g-4 mt-2">
+            <div class="col-md-12">
+                <div class="card shadow-sm p-4 border-0">
+                    <h5 class="text-muted text-uppercase small fw-bold mb-3">Live Network Traffic</h5>
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <span class="text-muted d-block small">Download Speed</span>
+                            <div id="net-down" class="h3 mb-0 text-success fw-bold">{{ stats.net_down }}</div>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block small">Upload Speed</span>
+                            <div id="net-up" class="h3 mb-0 text-info fw-bold">{{ stats.net_up }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-5 p-4 rounded shadow-sm card border-0">
-            <h6 class="text-muted mb-2">System Information</h6>
-            <p class="mb-0"><strong>Last Boot Time:</strong> {{ stats.boot_time }}</p>
-            <p class="mb-0 small text-muted">Updates every 5 seconds via API (No reload)</p>
+            <h6 class="text-muted mb-3 text-uppercase small fw-bold">Detailed System Info</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>OS Version:</strong> <span id="os-info">{{ stats.os_info }}</span></p>
+                    <p class="mb-1"><strong>Server Uptime:</strong> <span id="uptime-val">{{ stats.uptime }}</span></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Cached RAM:</strong> <span id="mem-cached">{{ stats.memory_cached }}</span> GB</p>
+                    <p class="mb-1 text-muted small"><strong>Booted At:</strong> {{ stats.boot_time }}</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-column justify-content-end">
+                    <p class="mb-0"><strong>Last Refreshed:</strong> 
+                        <span id="last-update" class="fw-bold" style="transition: color 0.3s ease;">Loading...</span>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -46,6 +46,10 @@ async function startLiveUpdates() {
 
             const data = await response.json();
 
+            document.getElementById('load-val').innerText = data.load_avg;
+            document.getElementById('os-info').innerText = data.os_info;
+            document.getElementById('mem-cached').innerText = data.memory_cached;
+
             // Update CPU Text and Bar
             document.getElementById('cpu-val').innerText = `${data.cpu}%`;
             document.getElementById('cpu-bar').style.width = `${data.cpu}%`;
@@ -58,12 +62,28 @@ async function startLiveUpdates() {
             document.getElementById('disk-val').innerText = `${data.disk_percent}%`;
             document.getElementById('disk-bar').style.width = `${data.disk_percent}%`;
 
+            // --- PRO TIP: UPDATE TIMESTAMP & PULSE EFFECT ---
+            const updateSpan = document.getElementById('last-update');
+            if (updateSpan) {
+                const now = new Date();
+                updateSpan.innerText = now.toLocaleTimeString();
+
+                // Visual Pulse: Flash green for 1 second
+                updateSpan.style.color = '#2ecc71';
+                updateSpan.style.transition = 'color 0.3s ease';
+                setTimeout(() => {
+                    updateSpan.style.color = ''; // Returns to CSS default
+                }, 1000);
+            }
+
         } catch (error) {
             console.error('Error fetching live stats:', error);
+            const updateSpan = document.getElementById('last-update');
+            if (updateSpan) updateSpan.innerText = "Update Failed";
         }
     };
 
-    // Run once immediately so we don't wait 5 seconds for the first update
+    // Run once immediately
     updateStats();
 
     // Set the loop
